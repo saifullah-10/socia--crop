@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Cropper with Zoom Slider</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f1f1f1;
+      margin: 0;
+    }
+    .container {
+      width: 80%;
+      max-width: 600px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .crop-container {
+      text-align: center;
+    }
+    .crop-container img {
+      max-width: 100%;
+      display: block;
+      margin: 0 auto;
+    }
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    #popup-box {
+      display: none;
+      position: fixed; /* Position it on top of the page */
+      top: 50%; /* Center it vertically */
+      left: 50%; /* Center it horizontally */
+      transform: translate(-50%, -50%); /* Correct positioning to center */
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      width: 80%; /* Adjust the width to be responsive */
+      max-width: 600px; /* Maximum width */
+      max-height: 80vh; /* Maximum height to avoid overflowing the viewport */
+      overflow-y: auto; /* Allows scrolling if the content exceeds the height */
+    }
+    
+    #popup-box img {
+      width: 100%;
+      max-height: 400px; /* Set a maximum height for the image to prevent overflow */
+      object-fit: contain; /* Ensures the image maintains aspect ratio */
+    }
+    
+    .button-container button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 0 10px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+.cropper-modal {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px); 
+}
+
+    .button-container button:hover {
+      background-color: #0056b3;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    #zoomSlider {
+      width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Upload and crop for social media image (Ratio = 2:1)</h2>
+
+    <div class="crop-container">
+      <input type="file" id="imageInput" accept="image/*">
+      <button id="selectButton">Select Image</button>
+    
+    </div>
+
+
+
+<div id="popup-box"  style="display: none;">
+  <div>
+    <img id="image" src="" alt="Image preview">
+  </div>
+  <div class="button-container">
+    <button id="cropButton" disabled>Crop Image</button>
+    <!-- <button id="resetButton" disabled>Reset</button> -->
+  </div>
+
+  <div>
+    <label for="zoomSlider">Zoom</label>
+    <input type="range" id="zoomSlider" min="0.1" max="3" step="0.1" value="0.1">
+  </div>
+    <h3>Cropped Image:</h3>
+    <div id="croppedResult">
+      <img src="" alt="Cropped Image" id="croppedImage" style="max-width: 100%; display: none;">
+    </div>
+</div>
+
+   
+
+
+  
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <script>
+    let cropper;
+    const imageInput = document.getElementById("imageInput");
+    const imageElement = document.getElementById("image");
+    const popupBox = document.getElementById("popup-box");
+    const cropButton = document.getElementById("cropButton");
+    //const resetButton = document.getElementById("resetButton");
+    const croppedImageElement = document.getElementById("croppedImage");
+    const selectButton = document.getElementById("selectButton");
+    const zoomSlider = document.getElementById("zoomSlider");
+
+    // Trigger the file input dialog when 'Select Image' button is clicked
+    selectButton.addEventListener("click", function() {
+      imageInput.click();
+    });
+
+    // Handle image selection
+    imageInput.addEventListener("change", function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          imageElement.src = e.target.result;
+          popupBox.style.display = "block";
+          cropButton.disabled = false; // Enable crop button when image is loaded
+          //resetButton.disabled = false; // Enable reset button when image is loaded
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Initialize Cropper.js when the image is loaded
+    imageElement.onload = function () {
+      cropper = new Cropper(imageElement, {
+        aspectRatio: 2/1, // Square crop box
+        viewMode: 1, // Constrained within the image
+        responsive: true, // Cropper resizes with window size
+        autoCropArea: 0.8, // 80% of image area will be cropped
+        cropBoxResizable: true, // Allows resizing the crop box
+        minContainerWidth: 300, // Minimum width of the container
+        minContainerHeight: 300, // Minimum height of the container
+        dragMode: 'crop', // Allow moving the crop box only
+        modal: true, // No modal effect
+        guides: false, // Display guides
+        center: true, // Center the crop box by default
+        highlight: true, // Highlight the area outside the crop box
+        background: false, // Show the image background
+        checkOrientation: true, // Adjust image orientation
+        zoomable: true, // Allow zooming
+        scalable: true, // Allow scaling the crop box beyond the image
+        movable: true, // Allow moving the crop box
+        rotatable: true, // Allow rotating the image and crop box
+        zoomOnWheel: true, // Enable zoom on mouse wheel
+        toggleDragModeOnDblclick: true
+      });
+    };
+
+    // Crop the image
+    cropButton.addEventListener("click", function () {
+      const canvas = cropper.getCroppedCanvas({
+        width: 300, // Set the cropped image size
+        height: 300,
+      });
+      const croppedImageURL = canvas.toDataURL();
+      croppedImageElement.src = croppedImageURL;
+      croppedImageElement.style.display = "block";
+    });
+
+    // Reset the cropper
+   /* resetButton.addEventListener("click", function () {
+      cropper.reset();
+      croppedImageElement.style.display = "none";
+      cropButton.disabled = true;
+      resetButton.disabled = true;
+    });*/
+
+    // Zoom functionality with slider
+    zoomSlider.addEventListener("input", function () {
+      const zoomValue = zoomSlider.value;
+      if (cropper) {
+        cropper.zoomTo(zoomValue);
+      }
+    });
+  </script>
+</body>
+</html>
